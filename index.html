@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>Memory Game Matcher</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<META NAME="author" CONTENT="Piyush Sethia">
+		<meta content="width=device-width, initial-scale=1.0" name="viewport">
+	<script src='jquery.min.js' type='text/javascript' language='javascript'></script>
+		
+	<script type='text/javascript' language='javascript'>
+		var order=[0,1,2,3,4,5,6,7,0,1,2,3,4,5,6,7];
+		shuffle = function(o){
+			for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+			return o;
+		};
+		function loadFunc(){
+			order=shuffle(order);
+			completecount = 0;
+			total_score = 0;
+			for(var i=0;i<16;i++){
+				$('#ad_gameouter').html($('#ad_gameouter').html()+"<div class='ad_blockouter'><img src='images/"+order[i]+".png' class='ad_image'/><img src='images/block.png' class='ad_block' id='ad_block"+i+"' onclick='openBlock("+i+");'/></div>");
+			}
+		}
+		function closeBlocks(){
+				$('.ad_block').fadeOut('slow');
+				setTimeout("$('.ad_block').fadeIn('slow');",900);
+		}
+		var clickno=1,openedid,blocktemp,enabled=1,completecount=0;
+		function openBlock(blockid){
+			if(appStarted==1&&enabled==1){
+				blocktemp=blockid;
+				if(clickno==1){
+					$("#ad_block"+blockid).hide(500);
+					openedid=blockid;
+					clickno=2;
+				}else{
+					if(order[blockid]==order[openedid]){
+						$("#ad_block"+blockid).hide(500);
+						completecount++;
+						score += 20;
+						$("#score_value").html(score);
+						if (level == 0) {
+							if(completecount==8){
+								stopApp();
+								stopTimer();
+							}
+						}
+						else{
+							if(completecount==8 && total_score >= 150){
+								stopApp();
+								stopTimer();
+							}
+							else if (completecount==8 && total_score <= 150) {
+								stopApp(true);
+								stopTimer();	
+							}	
+						}
+					}else{
+						if (score) {
+							score -= 5;
+							$("#score_value").html(score);
+						}
+						$("#ad_block"+blockid).hide(200);
+						enabled=0
+						setTimeout("$('#ad_block'+blocktemp).show(300);$('#ad_block'+openedid).show(300);enabled=1;",300);
+					}
+					clickno=1;
+				}
+			}
+		}
+		var appStarted=false;
+		var appCompleted=false;
+		var currentKey=97;
+		var timer=0;
+		var runTimer=false;
+		function startApp(){
+			$("#startpanel").css("display","none");
+			if(appCompleted==false){
+				startCountdown();
+			}
+		}
+		/*function clearInterval(timer){
+			console.log(timer);
+			return false;
+		}*/
+		var countdown=3;
+		var timer,count,score = 0,level =0,total_score;
+		var priorScore;
+		//priorScore = parseInt(localStorage.pairs_lastScore);
+		function startCountdown(){
+			if(countdown==0){
+				$('#timer').html("Started");
+				count = 60;
+				timer = setInterval(function() {
+					appStarted = true;
+					count--;
+					if (count > 9) {
+				    	$('#timer').html(00+":"+count);
+					}
+					else{
+						$('#timer').html(00+":"+"0"+count);	
+					}
+				    if(count == 0) {
+				    	clearTimeout(timer);
+				    	task_incomplete();
+				    	//clearInterval(timer);
+				    	return false;
+				    }
+				}, 1000);
+				closeBlocks();
+			}else{
+				$('#timer').html(countdown+"");
+				countdown--;
+				setTimeout("startCountdown();",1000);
+			}
+		}
+		function stopApp(args){
+			appCompleted=true;
+			if (!args) {
+				total_score = score + count;
+				localStorage.pairs_lastScore = parseInt(localStorage.pairs_lastScore) + total_score;
+				$('#ad_completed').show();
+				$('#ad_completed').html('<div id="endpanel" class="endbox"><div id="endstat" class="header">Level complete!</div><div id="endmess"><p style="font-size:120%; font-weight:bold"><br>You scored '+ score +' (bonus '+count +')<br>Total score for all levels is '+ parseInt(localStorage.pairs_lastScore) +'</p></div><button id="btnNext" onclick="nextLevel();" style="margin-top:16px; width:140px">Next Level</button>&nbsp;&nbsp;<button id="btnQuit"  onclick="stop_Game();" style="margin-top:16px">Exit</button></div>');
+			}
+			else{
+				$('#ad_completed').show();
+				$('#ad_completed').html('<div id="endpanel" class="endbox"><div id="endstat" class="header">Level Incomplete!</div><div id="endmess"><p style="font-size:120%; font-weight:bold"><br>You scored '+ score +' (bonus '+count +')<br>Total score for all levels is '+ parseInt(localStorage.pairs_lastScore) +'</p></div><button id="btnNext" onclick="same_Level();" style="margin-top:16px; width:140px">Try Again</button>&nbsp;&nbsp;<button id="btnQuit" onclick="stop_Game();" style="margin-top:16px">Exit</button></div>');	
+				total_score = 0;
+				score = 0;
+			}
+			//$('#ad_completed').html('<div id="endpanel" class="endbox"><div id="endstat" class="header">Level complete!</div>Completed !. Your time is '+$('#timer').html()+' seconds.<br/><a href="http://demo.tinywall.net/memorymaze/">Click here</a> to retry.</div>');
+			//setTimeout("ksPostStatus('"+$('#timer').html()+"');",2000);
+		}
+		var sec=0,milsec=0;
+		/*function startTimer(){
+			if(runTimer==true){
+				if(milsec==100){
+					milsec=0;
+					sec++;
+				}
+				$('#timer').html(zeroPad(sec,2)+"."+zeroPad(milsec,2));
+				milsec++;
+				setTimeout("startTimer()",10);
+			}
+		}
+		function zeroPad(num,count)
+		{
+			var numZeropad = num + '';
+			while(numZeropad.length < count) {
+			numZeropad = "0" + numZeropad;
+			}
+			return numZeropad;
+		}*/
+		function task_incomplete(){
+			$('#ad_completed').show();
+			$('#ad_completed').html('<div id="endpanel" class="endbox"><div id="endstat" class="header">Level Incomplete!</div><button id="btnNext" onclick="same_Level();" style="margin-top:16px; width:140px">Try Again</button>&nbsp;&nbsp;<button id="btnQuit" onclick="stop_Game();" style="margin-top:16px">Exit</button></div>');
+			appCompleted = false;
+			countdown = 3;
+		}
+		function stopTimer(){
+			clearTimeout(timer);
+			runTimer=false;
+		}
+		function same_Level(){
+			closeBlocks();
+			$('#ad_gameouter').html("");
+			loadFunc();
+			$('#ad_completed').hide();
+			$("#level_value").html(level);
+			$("#starttitle").html("Level "+level);
+			$("#startmess").html("You have 60 seconds to match 8 pairs and score minimum 150 points.<br>There are 8 different tiles");
+			$("#startpanel").css("display","inline-block");
+			completecount = 0;
+			appCompleted = false;
+			countdown = 3;
+			total_score = 0;	
+			score = 0;
+			$("#score_value").html(score);
+		}
+		function nextLevel(){
+			completecount = 0;
+			total_score = 0;
+			closeBlocks();
+			$('#ad_gameouter').html("") 
+			loadFunc();
+			$('#ad_completed').hide();
+			level++;
+			$("#level_value").html(level);
+			$("#starttitle").html("Level "+level);
+			$("#startmess").html("You have 60 seconds to match 8 pairs and score minimum 150 points.<br>There are 8 different tiles");
+			$("#startpanel").css("display","inline-block");
+			appCompleted = false;
+			countdown = 3;
+			score = 0;
+			$("#score_value").html(score);
+		}
+		function stop_Game(){
+			$('#ad_completed').hide();
+			closeBlocks();
+			$("#score_value").html(0);
+			countdown = 3;
+			completecount = 0;
+			total_score = 0;
+		}
+	</script>
+	<style type="text/css">
+		#ad_container{
+			width:600px;
+			margin: 0 auto;
+		}
+		#ad_startbutton{
+			cursor:pointer;
+			margin-top:10px;
+		}
+		
+		#ad_logocaption{
+			position:absolute;
+			top:80px;
+			left:210px;
+			color:#787878;
+		}
+		.clear{
+		clear:both;
+		}
+		#ad_gameouter{
+			width:300px;
+			height:300px;
+			
+			margin-left:150px;
+			margin-top:30px;
+		}
+		.ad_blockouter{
+			width:75px;
+			height:75px;
+			float:left;
+			
+		}
+		.ad_image{
+			position:absolute;
+		}
+		.ad_block{
+			position:absolute;
+			cursor:pointer;
+		}
+		#timer{
+			text-align:center;
+			font-size:30px;
+			color: #AE5F48;
+			margin-top: 10px;
+		}
+		#ad_completed{
+			text-align:center;
+			font-size:23px;
+			margin-top:10px;
+			color:#AE5F48;
+		}
+		#ad_completed a{
+			text-align:center;
+			font-size:23px;
+			margin-top:10px;
+			color:#AE5F48;
+		}
+		body{
+			margin: 80px 0;
+			background: -moz-linear-gradient(top, #1D3749, #1D3749, #559BB5);
+			background: -webkit-gradient(linear, center top, center bottom, color-stop(0%,#1D3749), color-stop(60%,#1D3749), color-stop(100%,#559BB5));
+			font-family: arial;
+			padding-top: 0px;
+			font:"Helvetica Neue", Arial, sans-serif;
+		}
+		.container {
+			width: 800px;
+			margin: 0 auto;
+		}
+		.header{
+			text-align: center;
+			font-size: 30px;
+			font-weight: bold;
+			margin-bottom: 10px;
+			text-shadow: rgba(0,0,0,.6) 0 1px 0;
+			color: #1D3749;
+		}
+		h1.title  {
+			font-size: 50px;
+			font-weight: bold;
+			color: #AE5F48;
+			margin: 0px;
+		}
+		h5.description{
+			margin-bottom: 0px;
+			font-weight: normal;
+			font-size: 14px;
+			color: #999;
+		}
+		button{
+			color: #000033;
+			font-size: 20px;
+			font-family: Arial;
+			width: 100px;
+			padding: 8px 8px;
+			display: inline-block;
+			cursor: pointer;
+			border-radius: 5px;
+			border: 1px solid #333;
+			background: white;
+		}
+		.start-button {
+			display: inline-block;
+			background: #AE5F48;
+			margin-top: 10px;
+			padding: 0 20px;
+			color: #f9f6f2;
+			height: 40px;
+			line-height: 42px;
+			cursor: pointer;
+			text-align: center;
+		}
+		.section {
+			background: #ffffff;
+			border: 1px solid #dddddd;
+			margin-top: 20px;margin-bottom: 20px;
+			padding: 20px;
+		}
+		#startpanel{
+			width: 100%;
+			height: 100%;
+			z-index: 999;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+		}
+		.messbox {
+		    width: 360px;
+		    border: dimgray 1px solid;
+		    background-color: aliceblue;
+		    color: #333333;
+		    border-radius: 8px;
+		    box-shadow: 1px 1px 1px #333333;
+		    font-size: 18px;
+		    padding: 16px;
+		    text-align: center;
+		    left: calc(50% - 212px);
+		    top: 45%;
+		    z-index: 999;
+		    position: absolute;
+		}
+
+		.endbox{
+			width: 300px;
+			border: dimgray 1px solid;
+			background-color: aliceblue;
+			color: #333333;
+			border-radius: 8px;
+			box-shadow: 1px 1px 1px #333333;
+			font-size: 16px;
+			padding: 22px;
+			left: calc(50% - 165px);
+		    top: 45%;
+		    z-index: 999;
+		    position: absolute;
+		}
+
+		.endbox .header{
+		}
+		.score_level{
+			display: inline-block;
+			position: relative;
+			text-align: center;
+			width: 100%;
+		}
+		.score_css, .Level_css{
+			display: inline-block;
+			padding: 0 1em;
+		}
+		.score_val_css, .level_val_css{
+			padding: 3px 6px 3px 6px;
+			background-color: #5bc0de;
+			border-radius: 6px;
+			width: 42px;
+			display: inline-block;
+			font-size: 18px;
+			text-align: center;
+		}
+	</style>
+	</head>
+	<body onload="loadFunc(); localStorage.pairs_lastScore = 0;">
+	<div style="position:fixed;top:0px;left:0px;width:0;height:0;" id="memorymaze"></div>
+	<div class="container">
+			<div class="header">
+				<h1 class="title">Matcher</h1>
+				<h5 class="description">Click a tile and then try to match it</h5>
+			</div>
+			<div id='ad_container'>	
+				<div id="ad_gameouter"></div>
+				<!-- <div align="center">
+					<div class="start-button" onclick='startApp();$(this).hide();'>Start Game</div>
+				</div> -->
+				<div id='timer'></div>
+				<div id='ad_completed'></div>
+			</div>
+			<div id="startpanel">
+				<div class="messbox">
+					<div id="starttitle" class="header">Level 0</div>
+					<div id="startmess">You have 60 seconds to match 8 pairs.<br>There are 8 different tiles.</div>
+					<button id="btnStart" style="margin-top:16px; cursor: pointer;" onclick="startApp();" >Start</button>
+				</div>
+			</div>
+			<div class="score_level">
+				<div class="score_css">
+					<label>Score</label>
+					<div id="score_value" class="score_val_css">0</div>
+				</div>
+				<div class="Level_css">
+					<label>Level</label>
+					<div id="level_value" class="level_val_css">0</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
